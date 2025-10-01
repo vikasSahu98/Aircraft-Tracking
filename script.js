@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Create a custom icon for the aircraft
     const aircraftIcon = L.divIcon({
-        html: `<div id="aircraft-icon" style="font-size: 24px; transform: rotate(0deg); transition: transform 0.1s linear;">${aircraftData.icon}</div>`,
+        html: `<div id="aircraft-icon" style="transform: rotate(0deg); transition: transform 0.2s linear;">${aircraftData.icon}</div>`,
         className: 'leaflet-div-icon',
         iconSize: [24, 24],
         iconAnchor: [12, 12] // Point of the icon which will correspond to marker's location
@@ -119,13 +119,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (i > lastPassedWaypointIndex) {
                     lastPassedWaypointIndex = i;
                     const waypointTime = timestampValueEl.textContent;
-                    const waypointName = waypointNames[i] || `Waypoint ${i}`;
+                    const waypointCoords = route[i];
+                    const locationString = `${waypointCoords[0].toFixed(4)}, ${waypointCoords[1].toFixed(4)}`;
                     
                     // Add a row to the history table
                     const newRow = historyTableBody.insertRow(0); // Insert at the top
                     newRow.innerHTML = `
                         <td>${waypointTime}</td>
-                        <td>${waypointName}</td>
+                        <td>${locationString}</td>
                         <td>${aircraftData.altitude}</td>
                         <td>${aircraftData.velocity}</td>
                     `;
