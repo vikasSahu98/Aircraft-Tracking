@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Multiple Base Maps</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="controls-container" class="ui-panel">
+        <button id="play-btn">▶ Play</button>
+        <button id="stop-btn">⏹ Stop</button>
+        <div id="timestamp-label">Timestamp:</div>
+        <div id="timestamp-value">--:--</div>
+        <input type="range" id="timeline-slider" min="0" max="1000" value="0" step="1">
+    </div>
+
+    <div id="info-card" class="ui-panel" style="display: none;">
+        <h4>
+            <span id="info-callsign"></span>
+            <button id="history-card-btn" title="Show Route History">📜</button>
+            <button id="close-card-btn">×</button>
+        </h4>
+        <table>
+            <tr><td>CIFOS:</td><td id="info-icao24"></td></tr>
+            <tr><td>Callsign:</td><td id="info-callsign-data"></td></tr>
+            <tr><td>Country:</td><td id="info-country"></td></tr>
+            <tr><td>Category:</td><td id="info-category"></td></tr>
+            <tr><td>Latitude:</td><td id="info-lat"></td></tr>
+            <tr><td>Longitude:</td><td id="info-lon"></td></tr>
+            <tr>
+                <td>Altitude:</td>
+                <td class="value-unit-cell"><span id="info-alt"></span> <select id="alt-unit-select"><option value="m">m</option><option value="ft">ft</option></select></td>
+            </tr>
+            <tr>
+                <td>Velocity:</td>
+                <td class="value-unit-cell">
+                    <span id="info-vel"></span>
+                    <select id="vel-unit-select"><option value="m/s">m/s</option><option value="km/h">km/h</option><option value="knots">knots</option></select>
+                </td>
+            </tr>
+            <tr><td>Track:</td><td id="info-track"></td></tr>
+            <tr><td>On Ground:</td><td id="info-on-ground"></td></tr>
+            <tr><td>Vertical Rate:</td><td id="info-vert-rate"></td></tr>
+            <tr><td>Pos. Source:</td><td id="info-pos-source"></td></tr>
+            <tr><td>Last Update:</td><td id="info-last-update"></td></tr>
+        </table>
+    </div>
+
+    <div id="history-card" class="ui-panel" style="display: none;">
+        <h4>
+            <span>Route History</span>
+            <button id="close-history-card-btn">×</button>
+        </h4>
+        <table id="history-table">
+            <thead>
+                <tr><th>Time</th><th>Location</th><th>Alt (m)</th><th>Vel (m/s)</th></tr>
+            </thead>
+            <tbody>
+                <!-- History rows will be added here dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

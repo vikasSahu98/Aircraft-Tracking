@@ -1,0 +1,255 @@
+:root {
+    --font-primary: 'Roboto', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+    --color-bg: #f0f2f5;
+    --color-text-primary: #1c1e21;
+    --color-text-secondary: #606770;
+    --color-accent: #007bff;
+    --color-panel-bg: #ffffff;
+    --color-border: rgba(0, 0, 0, 0.1);
+    --panel-border-radius: 8px;
+    --panel-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-bg);
+    font-family: var(--font-primary);
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+/* --- UI Panels --- */
+.ui-panel {
+    background: var(--color-panel-bg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--panel-shadow);
+    border-radius: var(--panel-border-radius);
+    padding: 12px;
+    font-size: 14px;
+    color: var(--color-text-primary);
+}
+
+#controls-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000; /* Ensure it's above the map */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#controls-container > * {
+    display: flex;
+    align-items: center;
+}
+
+#controls-container button {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+#controls-container button:hover {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
+
+#controls-container button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#timestamp-label {
+    color: var(--color-text-secondary);
+}
+
+#timestamp-value {
+    font-family: var(--font-mono);
+    font-weight: 500;
+}
+
+#timeline-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 150px;
+    cursor: pointer;
+    background: transparent;
+}
+
+/* --- Slider Styles --- */
+#timeline-slider::-webkit-slider-runnable-track {
+    background: rgba(0, 0, 0, 0.2);
+    height: 4px;
+    border-radius: 2px;
+}
+#timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px;
+    background-color: var(--color-accent);
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+}
+
+#info-card {
+    position: absolute;
+    bottom: 85px; /* Position above the controls container */
+    right: 20px;
+    width: 250px;
+    z-index: 1000;
+}
+
+#history-card {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 250px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#info-card h4 {
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+#history-card h4 {
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+#info-card table {
+    width: 100%;
+}
+
+#info-card td {
+    padding: 4px 0;
+    font-family: var(--font-mono);
+}
+
+#info-card td:first-child {
+    font-family: var(--font-primary);
+    color: var(--color-text-secondary);
+    width: 110px; /* Align values */
+}
+
+#history-card-btn,
+#close-card-btn,
+#close-history-card-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0 5px;
+}
+
+#history-card-btn {
+    font-size: 16px;
+    margin-right: auto;
+    margin-left: 10px;
+}
+
+#history-card-btn:hover,
+#close-card-btn:hover,
+#close-history-card-btn:hover {
+    color: var(--color-text-primary);
+}
+
+.value-unit-cell {
+    display: flex;
+    align-items: center;
+}
+
+.value-unit-cell select {
+    margin-left: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background-color: #fff;
+    color: var(--color-text-primary);
+    font-size: 12px;
+}
+
+#history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+#history-table th, #history-table td {
+    border-bottom: 1px solid var(--color-border);
+    padding: 6px 4px;
+    text-align: left;
+}
+
+#history-table th {
+    color: var(--color-text-secondary);
+}
+
+#history-table td {
+    font-family: var(--font-mono);
+}
+
+/* --- Leaflet Control Overrides --- */
+.leaflet-control-container .leaflet-control {
+    box-shadow: none; /* Remove default shadow to use our own */
+    margin: 12px;
+}
+
+.leaflet-control-layers,
+.leaflet-bar {
+    border: 1px solid var(--color-border);
+    box-shadow: var(--panel-shadow);
+    border-radius: var(--panel-border-radius);
+    overflow: hidden; /* Ensures content respects the border-radius */
+}
+
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+    background-color: var(--color-panel-bg);
+    color: var(--color-text-primary);
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.leaflet-bar a:last-child {
+    border-bottom: none;
+}
+
+.leaflet-bar a:hover,
+.leaflet-control-layers-toggle:hover {
+    background-color: var(--color-accent);
+    color: #fff;
+}
+
+.leaflet-control-scale-line {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
