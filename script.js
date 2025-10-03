@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const historyTableBody = document.querySelector('#history-table tbody');
 
     let animationFrameId = null;
-    const animationDuration = 30000; // 30 seconds for the whole route
+    const animationDuration = 60000; // 60 seconds for the whole route
     let animationStartTime = 0;
     let pausedTime = 0;
     let selectedAircraftInstance = null;
