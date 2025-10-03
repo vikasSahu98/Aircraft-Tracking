@@ -27,25 +27,44 @@ const baseMapLayers = {
     }
 };
 
-const aircraftData = {
-    flightNumber: "IND-456",
-    callsign: "VISTARA",
-    icao24: "800C6E",
-    originCountry: "India",
-    category: "A3", // Medium-sized aircraft
-    altitude: 10668, // meters (approx. 35,000 ft)
-    velocity: 245, // meters/second (approx. 475 knots)
-    onGround: false,
-    verticalRate: 0, // m/s
-    positionSource: 0, // 0 = ADS-B
-    // trueTrack and lastUpdate will be calculated dynamically
-    route: [
-        [28.5665, 77.1032], // Delhi
-        [26.8241, 75.8122], // Jaipur
-        [24.5854, 73.7125], // Udaipur
-        [22.3094, 73.1812], // Vadodara
-        [19.0896, 72.8656]  // Mumbai
-    ],
-    // SVG icon for the aircraft. It's designed pointing upwards (0 degrees).
-    icon: `<svg viewBox="0 0 24 24" fill="#007bff" style="transform: scale(1.5);"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`
-};
+const aircraftData = [
+    {
+        flightNumber: "IND-456",
+        callsign: "VISTARA",
+        icao24: "800C6E",
+        originCountry: "India",
+        category: "A3", // Medium-sized aircraft
+        altitude: 10668, // meters (approx. 35,000 ft)
+        velocity: 245, // meters/second (approx. 475 knots)
+        onGround: false,
+        verticalRate: 0, // m/s
+        positionSource: 0, // 0 = ADS-B
+        color: '#007bff',
+        route: [
+            [28.5665, 77.1032], // Delhi
+            [26.8241, 75.8122], // Jaipur
+            [24.5854, 73.7125], // Udaipur
+            [22.3094, 73.1812], // Vadodara
+            [19.0896, 72.8656]  // Mumbai
+        ]
+    },
+    {
+        flightNumber: "SGP-789",
+        callsign: "SPICEJET",
+        icao24: "75804F",
+        originCountry: "India",
+        category: "B738", // Boeing 737-800
+        altitude: 11277, // meters (approx. 37,000 ft)
+        velocity: 255, // meters/second (approx. 495 knots)
+        onGround: false,
+        verticalRate: 0, // m/s
+        positionSource: 0, // 0 = ADS-B
+        color: '#fd7e14', // Orange
+        route: [
+            [12.9716, 77.5946], // Bengaluru
+            [17.3850, 78.4867], // Hyderabad
+            [21.1702, 72.8311], // Surat
+            [28.7041, 77.1025]  // Delhi
+        ]
+    }
+];

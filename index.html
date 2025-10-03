@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaflet Multiple Base Maps</title>
+    <title>Aircraft Tracking</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -20,8 +20,7 @@
     <div id="map"></div>
 
     <div id="controls-container" class="ui-panel">
-        <button id="play-btn">▶ Play</button>
-        <button id="stop-btn">⏹ Stop</button>
+        <button id="play-pause-btn">▶ Play</button>
         <div id="timestamp-label">Timestamp:</div>
         <div id="timestamp-value">--:--</div>
         <input type="range" id="timeline-slider" min="0" max="1000" value="0" step="1">
@@ -31,7 +30,7 @@
         <h4>
             <span id="info-callsign"></span>
             <button id="history-card-btn" title="Show Route History">📜</button>
-            <button id="close-card-btn">×</button>
+            <button id="close-card-btn">x</button>
         </h4>
         <table>
             <tr><td>CIFOS:</td><td id="info-icao24"></td></tr>

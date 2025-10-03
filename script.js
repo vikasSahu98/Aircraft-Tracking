@@ -13,31 +13,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     baseLayers["OpenStreetMap"].addTo(map); // Set light map as default
 
-    // 3. Prepare Aircraft and Route
-    const route = aircraftData.route;
-    const startingPosition = route[0];
-
-    // Create a custom icon for the aircraft
-    const aircraftIcon = L.divIcon({
-        html: `<div id="aircraft-icon" style="transform: rotate(0deg); transition: transform 0.2s linear;">${aircraftData.icon}</div>`,
-        className: 'leaflet-div-icon',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12] // Point of the icon which will correspond to marker's location
-    });
-
-    // Create the marker, starting at the first point of the route
-    const aircraftMarker = L.marker(startingPosition, { icon: aircraftIcon });
-
-    // Create the polyline for the aircraft's route history
-    const routeHistory = L.polyline(route, { color: '#007bff', weight: 3, opacity: 0.8 });
-
-    // Group the marker and route into a single layer group
-    const aircraftLayer = L.layerGroup([routeHistory, aircraftMarker]);
-
     // 4. Setup Controls
     L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.scale({ position: 'bottomleft' }).addTo(map);
 
+    // This layer group will hold all individual aircraft layers
+    const aircraftLayer = L.layerGroup();
     const overlayLayers = {
         "Aircraft Tracking": aircraftLayer
     };
@@ -45,8 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
     L.control.layers(baseLayers, overlayLayers, { position: 'topright' }).addTo(map);
 
     // 5. Animation Logic
-    const playBtn = document.getElementById('play-btn');
-    const stopBtn = document.getElementById('stop-btn');
+    const playPauseBtn = document.getElementById('play-pause-btn');
     const timestampValueEl = document.getElementById('timestamp-value');
     const timelineSlider = document.getElementById('timeline-slider');
     const infoCard = document.getElementById('info-card');
@@ -62,8 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const animationDuration = 30000; // 30 seconds for the whole route
     let animationStartTime = 0;
     let pausedTime = 0;
-    let lastPassedWaypointIndex = -1;
-    const waypointNames = ['Delhi', 'Jaipur', 'Udaipur', 'Vadodara', 'Mumbai'];
+    let selectedAircraftInstance = null;
+    const aircraftInstances = [];
 
     // Pre-calculate route distances for performance
     // Unit conversion state
@@ -71,12 +51,48 @@ document.addEventListener('DOMContentLoaded', function () {
     let velocityUnit = 'm/s';
 
     let totalDistance = 0;
-    const segmentDistances = route.slice(1).map((point, i) => {
-        const dist = map.distance(route[i], point);
-        totalDistance += dist;
-        return dist;
-    });
 
+    // 3. Prepare All Aircraft and Routes
+    aircraftData.forEach((data, index) => {
+        const route = data.route;
+        const startingPosition = route[0];
+        const iconSvg = `<svg viewBox="0 0 24 24" fill="${data.color}" style="transform: scale(1.5);"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`;
+
+        const aircraftIcon = L.divIcon({
+            html: `<div id="aircraft-icon-${index}" style="transform: rotate(0deg); transition: transform 0.2s linear;">${iconSvg}</div>`,
+            className: 'leaflet-div-icon',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+
+        const marker = L.marker(startingPosition, { icon: aircraftIcon });
+        const routeHistory = L.polyline(route, { color: data.color, weight: 3, opacity: 0.8 });
+
+        // Add this aircraft's layers to the main group
+        aircraftLayer.addLayer(routeHistory);
+        aircraftLayer.addLayer(marker);
+
+        // Calculate route distances for this specific aircraft
+        let aircraftTotalDistance = 0;
+        const segmentDistances = route.slice(1).map((point, i) => {
+            const dist = map.distance(route[i], point);
+            aircraftTotalDistance += dist;
+            return dist;
+        });
+
+        const instance = {
+            data,
+            marker,
+            index,
+            route,
+            totalDistance: aircraftTotalDistance,
+            segmentDistances,
+            lastPassedWaypointIndex: -1
+        };
+
+        marker.on('click', () => onAircraftClick(instance));
+        aircraftInstances.push(instance);
+    });
     // Function to calculate bearing between two points
     function calculateBearing(lat1, lon1, lat2, lon2) {
         const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
@@ -86,40 +102,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // A new function to update all visual elements based on progress (0 to 1)
     function updateVisuals(progress) {
-        const traveledDistance = progress * totalDistance;
+        // Update each aircraft
+        aircraftInstances.forEach(instance => {
+            const traveledDistance = progress * instance.totalDistance;
+            let cumulativeDistance = 0;
 
-        // Find current segment and position along the route
-        let cumulativeDistance = 0;
-        for (let i = 0; i < segmentDistances.length; i++) {
-            const segmentStart = route[i];
-            const segmentEnd = route[i + 1];
-            const segmentDistance = segmentDistances[i];
+            for (let i = 0; i < instance.segmentDistances.length; i++) {
+                const segmentStart = instance.route[i];
+                const segmentEnd = instance.route[i + 1];
+                const segmentDistance = instance.segmentDistances[i];
 
-            if (cumulativeDistance + segmentDistance >= traveledDistance) {
+                if (cumulativeDistance + segmentDistance >= traveledDistance) {
                 const distanceIntoSegment = traveledDistance - cumulativeDistance;
                 const segmentProgress = distanceIntoSegment / segmentDistance;
 
                 const lat = segmentStart[0] + (segmentEnd[0] - segmentStart[0]) * segmentProgress;
                 const lng = segmentStart[1] + (segmentEnd[1] - segmentStart[1]) * segmentProgress;
 
-                aircraftMarker.setLatLng([lat, lng]);
-                const currentCoords = [lat, lng];
+                    instance.marker.setLatLng([lat, lng]);
 
                 // Update rotation
                 const bearing = calculateBearing(
                     L.latLng(segmentStart).lat * Math.PI / 180, L.latLng(segmentStart).lng * Math.PI / 180,
                     L.latLng(segmentEnd).lat * Math.PI / 180, L.latLng(segmentEnd).lng * Math.PI / 180
                 );
-                const iconElement = document.getElementById('aircraft-icon');
+                    const iconElement = document.getElementById(`aircraft-icon-${instance.index}`);
                 if (iconElement) {
                     iconElement.style.transform = `rotate(${bearing}deg)`;
                 }
 
                 // Check if a waypoint has been passed
-                if (i > lastPassedWaypointIndex) {
-                    lastPassedWaypointIndex = i;
+                    if (i > instance.lastPassedWaypointIndex) {
+                        instance.lastPassedWaypointIndex = i;
                     const waypointTime = timestampValueEl.textContent;
-                    const waypointCoords = route[i];
+                        const waypointCoords = instance.route[i];
                     const locationString = `${waypointCoords[0].toFixed(4)}, ${waypointCoords[1].toFixed(4)}`;
                     
                     // Add a row to the history table
@@ -127,12 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     newRow.innerHTML = `
                         <td>${waypointTime}</td>
                         <td>${locationString}</td>
-                        <td>${aircraftData.altitude}</td>
-                        <td>${aircraftData.velocity}</td>
+                        <td>${instance.data.altitude}</td>
+                        <td>${instance.data.velocity}</td>
                     `;
                 }
-                // If info card is visible, update its content
-                if (infoCard.style.display !== 'none') {
+                    // If this is the selected aircraft, update the info card
+                    if (selectedAircraftInstance && selectedAircraftInstance.index === instance.index) {
                     document.getElementById('info-lat').textContent = lat.toFixed(4);
                     document.getElementById('info-lon').textContent = lng.toFixed(4);
                     document.getElementById('info-track').textContent = `${Math.round(bearing)}°`;
@@ -140,37 +156,28 @@ document.addEventListener('DOMContentLoaded', function () {
                     const positionSourceMap = { 0: 'ADS-B', 1: 'ASTERIX', 2: 'MLAT', 3: 'FLARM' };
 
                     // Altitude conversion and display
-                    let alt = aircraftData.altitude;
+                        let alt = instance.data.altitude;
                     if (altitudeUnit === 'ft') {
                         alt = alt * 3.28084;
                     }
                     document.getElementById('info-alt').textContent = Math.round(alt);
-                    document.getElementById('info-vert-rate').textContent = `${aircraftData.verticalRate} m/s`;
-
-                    // Set static data (this is okay to set repeatedly)
-                    document.getElementById('info-callsign-data').textContent = aircraftData.callsign;
-                    document.getElementById('info-category').textContent = aircraftData.category;
-                    document.getElementById('info-on-ground').textContent = aircraftData.onGround ? 'Yes' : 'No';
-                    document.getElementById('info-pos-source').textContent = positionSourceMap[aircraftData.positionSource] || 'Unknown';
+                        document.getElementById('info-vert-rate').textContent = `${instance.data.verticalRate} m/s`;
                     document.getElementById('info-last-update').textContent = new Date().toLocaleTimeString();
+
                     // Velocity conversion and display
-                    let vel = aircraftData.velocity;
+                        let vel = instance.data.velocity;
                     if (velocityUnit === 'km/h') {
                         vel = vel * 3.6;
                     } else if (velocityUnit === 'knots') {
                         vel = vel * 1.94384;
                     }
                     document.getElementById('info-vel').textContent = Math.round(vel);
+                    }
+                    break;
                 }
-
-                document.getElementById('info-callsign').textContent = aircraftData.callsign;
-                document.getElementById('info-icao24').textContent = aircraftData.icao24;
-                document.getElementById('info-country').textContent = aircraftData.originCountry;
-
-                break;
+                cumulativeDistance += segmentDistance;
             }
-            cumulativeDistance += segmentDistance;
-        }
+        });
 
         // Update timestamp (simple progress display)
         const totalSeconds = Math.floor(progress * (animationDuration / 1000));
@@ -192,60 +199,75 @@ document.addEventListener('DOMContentLoaded', function () {
             animationFrameId = requestAnimationFrame(animate);
         } else {
             timestampValueEl.textContent = "Arrived!";
-            playBtn.disabled = false;
-            stopBtn.disabled = true;
+            playPauseBtn.textContent = '▶ Play';
+            playPauseBtn.disabled = false;
             pausedTime = 0; // Reset for next playback
             // Add final destination to history
-            if (lastPassedWaypointIndex < route.length - 1) {
+            const instance = aircraftInstances.find(inst => inst.lastPassedWaypointIndex < inst.route.length - 1);
+            if (instance) {
                 updateVisuals(1);
             }
         }
     }
 
-    playBtn.addEventListener('click', () => {
-        if (animationFrameId) return; // Already playing
-        // If paused, resume. Otherwise, start from the beginning.
-        animationStartTime = Date.now() - pausedTime;
-        if (pausedTime === 0) { // If starting from the beginning, clear history
-            historyTableBody.innerHTML = '';
-            lastPassedWaypointIndex = -1;
-        }
-        animate();
-        playBtn.disabled = true;
-        stopBtn.disabled = false;
-    });
-
-    stopBtn.addEventListener('click', () => {
+    playPauseBtn.addEventListener('click', () => {
         if (animationFrameId) {
+            // --- PAUSE ---
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
             pausedTime = Date.now() - animationStartTime; // Record how far along we were
-            playBtn.disabled = false;
-            stopBtn.disabled = true;
+            playPauseBtn.textContent = '▶ Play';
+        } else {
+            // --- PLAY ---
+            animationStartTime = Date.now() - pausedTime;
+            if (pausedTime === 0) { // If starting from the beginning, clear history
+                if (selectedAircraftInstance) {
+                    historyTableBody.innerHTML = '';
+                }
+                aircraftInstances.forEach(inst => inst.lastPassedWaypointIndex = -1);
+            }
+            animate();
+            playPauseBtn.textContent = '⏸ Pause';
         }
     });
 
     timelineSlider.addEventListener('input', (e) => {
         // When user scrubs, pause the animation
         if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-            playBtn.disabled = false;
-            stopBtn.disabled = true;
+            playPauseBtn.click(); // Programmatically click to pause
         }
         const progress = e.target.value / 1000;
         pausedTime = progress * animationDuration; // Set the pause time to the scrubbed position
         updateVisuals(progress);
     });
 
-    // Show/Hide Info Card
-    aircraftMarker.on('click', () => {
+    function onAircraftClick(instance) {
+        selectedAircraftInstance = instance;
+        const data = instance.data;
+
+        // Populate static info card data
+        document.getElementById('info-callsign').textContent = data.callsign;
+        document.getElementById('info-icao24').textContent = data.icao24;
+        document.getElementById('info-callsign-data').textContent = data.callsign;
+        document.getElementById('info-country').textContent = data.originCountry;
+        document.getElementById('info-category').textContent = data.category;
+        document.getElementById('info-on-ground').textContent = data.onGround ? 'Yes' : 'No';
+        const positionSourceMap = { 0: 'ADS-B', 1: 'ASTERIX', 2: 'MLAT', 3: 'FLARM' };
+        document.getElementById('info-pos-source').textContent = positionSourceMap[data.positionSource] || 'Unknown';
+
+        // Clear and show cards
+        historyTableBody.innerHTML = ''; // Clear history for the new selection
+        historyCard.style.display = 'none'; // Hide history card initially
         infoCard.style.display = 'block';
+
+        // Update dynamic data
         updateVisuals(timelineSlider.value / 1000); // Update with current data
-    });
+    }
 
     document.getElementById('close-card-btn').addEventListener('click', () => {
         infoCard.style.display = 'none';
+        historyCard.style.display = 'none';
+        selectedAircraftInstance = null;
     });
 
     // Unit selection change handlers
@@ -261,8 +283,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- History Card Logic ---
     historyBtn.addEventListener('click', () => {
-        // Toggle the history card visibility
-        historyCard.style.display = historyCard.style.display === 'none' ? 'block' : 'none';
+        if (selectedAircraftInstance) {
+            // Toggle the history card visibility
+            historyCard.style.display = historyCard.style.display === 'none' ? 'block' : 'none';
+        }
     });
 
     document.getElementById('close-history-card-btn').addEventListener('click', () => {
