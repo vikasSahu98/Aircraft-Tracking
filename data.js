@@ -64,7 +64,7 @@ const aircraftData = [
         onGround: false,
         verticalRate: 0, // m/s
         positionSource: 0, // 0 = ADS-B
-        color: '#fd7e14', // Orange
+        color: '#007bff', // Blue
         // A more realistic, curved route from Bengaluru to Delhi
         route: [
             [12.9716, 77.5946], // Bengaluru

@@ -115,7 +115,7 @@ body {
     position: absolute;
     bottom: 20px;
     left: 20px;
-    width: 250px;
+    width: 300px;
     z-index: 1000;
     max-height: 300px;
     overflow-y: auto;
