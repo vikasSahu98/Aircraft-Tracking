@@ -34,10 +34,10 @@ const aircraftData = [
         icao24: "800C6E",
         originCountry: "India",
         category: "A3", // Medium-sized aircraft
-        altitude: 10668, // meters (approx. 35,000 ft)
+        cruiseAltitude: 10668, // meters (approx. 35,000 ft)
+        startAltitude: 216, // Delhi airport elevation in meters
         velocity: 245, // meters/second (approx. 475 knots)
         onGround: false,
-        verticalRate: 0, // m/s
         positionSource: 0, // 0 = ADS-B
         color: '#007bff',
         // A more realistic, curved route from Delhi to Mumbai
@@ -59,10 +59,10 @@ const aircraftData = [
         icao24: "75804F",
         originCountry: "India",
         category: "B738", // Boeing 737-800
-        altitude: 11277, // meters (approx. 37,000 ft)
+        cruiseAltitude: 11277, // meters (approx. 37,000 ft)
+        startAltitude: 915, // Bengaluru airport elevation in meters
         velocity: 255, // meters/second (approx. 495 knots)
         onGround: false,
-        verticalRate: 0, // m/s
         positionSource: 0, // 0 = ADS-B
         color: '#007bff', // Blue
         // A more realistic, curved route from Bengaluru to Delhi

@@ -52,7 +52,13 @@
             </tr>
             <tr><td>Track:</td><td id="info-track"></td></tr>
             <tr><td>On Ground:</td><td id="info-on-ground"></td></tr>
-            <tr><td>Vertical Rate:</td><td id="info-vert-rate"></td></tr>
+            <tr>
+                <td>Vertical Rate:</td>
+                <td class="value-unit-cell">
+                    <span id="info-vert-rate"></span>
+                    <select id="vert-rate-unit-select"><option value="m/s">m/s</option><option value="ft/min">ft/min</option></select>
+                </td>
+            </tr>
             <tr><td>Pos. Source:</td><td id="info-pos-source"></td></tr>
             <tr><td>Last Update:</td><td id="info-last-update"></td></tr>
         </table>

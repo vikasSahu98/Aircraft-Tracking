@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const infoCard = document.getElementById('info-card');
     const altUnitSelect = document.getElementById('alt-unit-select');
     const velUnitSelect = document.getElementById('vel-unit-select');
+    const vertRateUnitSelect = document.getElementById('vert-rate-unit-select');
 
     // History card
     const historyBtn = document.getElementById('history-card-btn');
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Default Units ---
     let altitudeUnit = 'ft';   // Default altitude unit
     let velocityUnit = 'knots'; // Default velocity unit
+    let verticalRateUnit = 'ft/min'; // Default vertical rate unit
 
     // Simulation setup
     const simulationStartTime = new Date();
@@ -126,6 +128,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     const iconElement = document.getElementById(`aircraft-icon-${instance.index}`);
                     if (iconElement) iconElement.style.transform = `rotate(${bearing}deg)`;
 
+                    // --- Dynamic Altitude and Vertical Rate Calculation ---
+                    const realisticVerticalRate = 15; // m/s (approx. 3000 ft/min)
+                    const altitudeDifference = instance.data.cruiseAltitude - instance.data.startAltitude;
+                    
+                    // Calculate how long it takes to climb and descend at a realistic rate
+                    const climbDurationSeconds = altitudeDifference / realisticVerticalRate;
+                    const descentDurationSeconds = climbDurationSeconds; // Assume descent takes the same time
+
+                    // Calculate what percentage of the total animation time is spent on climb/descent
+                    const climbPhaseEnd = (climbDurationSeconds * 1000) / animationDuration;
+                    const descentPhaseStart = 1.0 - ((descentDurationSeconds * 1000) / animationDuration);
+
+                    let currentAltitude = instance.data.cruiseAltitude;
+                    let currentVerticalRate = 0; // m/s
+
+                    if (progress < climbPhaseEnd && progress > 0) {
+                        // Climbing Phase
+                        const climbProgress = progress / climbPhaseEnd;
+                        currentAltitude = instance.data.startAltitude + (altitudeDifference * climbProgress);
+                        currentVerticalRate = realisticVerticalRate;
+                    } else if (progress > descentPhaseStart) {
+                        // Descending Phase
+                        const descentProgress = (progress - descentPhaseStart) / (1 - descentPhaseStart);
+                        currentAltitude = instance.data.cruiseAltitude - (altitudeDifference * descentProgress);
+                        currentVerticalRate = -realisticVerticalRate;
+                    }
+
+                    // Ensure altitude doesn't go below start altitude at the very end
+                    if (progress >= 1) {
+                        currentAltitude = instance.data.startAltitude;
+                        currentVerticalRate = 0;
+                    }
+                    // --- End of Dynamic Calculations ---
+
                     // --- Per-Minute Logging ---
                     const elapsedTimeMs = progress * simulationDurationMinutes * 60 * 1000;
                     const currentTime = new Date(simulationStartTime.getTime() + elapsedTimeMs);
@@ -143,8 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             const posSourceString = positionSourceMap[instance.data.positionSource] || 'Unknown';
 
                             // Unit conversion
-                            let alt = instance.data.altitude;
-                            if (altitudeUnit === 'ft') alt *= 3.28084;
+                            let alt = currentAltitude;
 
                             let vel = instance.data.velocity;
                             if (velocityUnit === 'km/h') vel *= 3.6;
@@ -167,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.getElementById('info-lon').textContent = lng.toFixed(2);
                         document.getElementById('info-track').textContent = `${Math.round(bearing)}°`;
 
-                        let alt = instance.data.altitude;
+                        let alt = currentAltitude;
                         if (altitudeUnit === 'ft') alt *= 3.28084;
                         document.getElementById('info-alt').textContent = Math.round(alt);
 
@@ -176,7 +211,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         else if (velocityUnit === 'knots') vel *= 1.94384;
                         document.getElementById('info-vel').textContent = Math.round(vel);
 
-                        document.getElementById('info-vert-rate').textContent = `${instance.data.verticalRate} m/s`;
+                        let vertRate = currentVerticalRate;
+                        if (verticalRateUnit === 'ft/min') vertRate *= 196.85; // 1 m/s = 196.85 ft/min
+                        document.getElementById('info-vert-rate').textContent = Math.round(vertRate);
 
                         const utcHours = currentTime.getUTCHours();
                         const utcMinutes = currentTime.getUTCMinutes();
@@ -264,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Unit Selectors ---
     altUnitSelect.value = 'ft';
     velUnitSelect.value = 'knots';
+    vertRateUnitSelect.value = 'ft/min';
 
     altUnitSelect.addEventListener('change', (e) => {
         altitudeUnit = e.target.value;
@@ -272,6 +310,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     velUnitSelect.addEventListener('change', (e) => {
         velocityUnit = e.target.value;
+        updateVisuals(timelineSlider.value / 1000);
+    });
+
+    vertRateUnitSelect.addEventListener('change', (e) => {
+        verticalRateUnit = e.target.value;
         updateVisuals(timelineSlider.value / 1000);
     });
 
