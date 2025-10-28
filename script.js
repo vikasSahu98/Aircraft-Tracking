@@ -88,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function () {
             totalDistance: aircraftTotalDistance,
             segmentDistances,
             lastPassedWaypointIndex: -1,
-            lastLoggedMinute: null
+            lastLoggedMinute: null,
+            signalLossAlertShown: false
         };
 
         marker.on('click', () => onAircraftClick(instance));
@@ -103,6 +104,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateVisuals(progress) {
         const positionSourceMap = { 0: 'ADS-B', 1: 'ASTERIX', 2: 'MLAT', 3: 'FLARM' };
+
+        // --- Time Calculation ---
+        const elapsedTimeMs = progress * simulationDurationMinutes * 60 * 1000;
+        const currentTime = new Date(simulationStartTime.getTime() + elapsedTimeMs);
+        const currentSimMinute = (currentTime.getUTCHours() - simulationStartTime.getUTCHours()) * 60 + (currentTime.getUTCMinutes() - simulationStartTime.getUTCMinutes());
 
         aircraftInstances.forEach(instance => {
             const traveledDistance = progress * instance.totalDistance;
@@ -127,6 +133,31 @@ document.addEventListener('DOMContentLoaded', function () {
                     );
                     const iconElement = document.getElementById(`aircraft-icon-${instance.index}`);
                     if (iconElement) iconElement.style.transform = `rotate(${bearing}deg)`;
+
+                    // --- Signal Loss Simulation ---
+                    let isSignalLost = false;
+                    if (instance.data.signalLoss) {
+                        const loss = instance.data.signalLoss;
+                        if (currentSimMinute >= loss.startMinute && currentSimMinute < loss.startMinute + loss.duration) {
+                            isSignalLost = true;
+                        }
+                    }
+
+                    if (isSignalLost) {
+                        if (iconElement) iconElement.style.display = 'none';
+
+                        // Show alert only once when signal is first lost
+                        if (!instance.signalLossAlertShown) {
+                            alert(`Signal lost for ${instance.data.callsign}!\nLast known location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                            instance.signalLossAlertShown = true;
+                        }
+                    } else {
+                        if (iconElement) iconElement.style.display = 'block';
+                        // Reset alert flag if signal is restored
+                        if (instance.signalLossAlertShown) {
+                            instance.signalLossAlertShown = false;
+                        }
+                    }
 
                     // --- Dynamic Altitude and Vertical Rate Calculation ---
                     const realisticVerticalRate = 15; // m/s (approx. 3000 ft/min)
@@ -163,11 +194,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     // --- End of Dynamic Calculations ---
 
                     // --- Per-Minute Logging ---
-                    const elapsedTimeMs = progress * simulationDurationMinutes * 60 * 1000;
-                    const currentTime = new Date(simulationStartTime.getTime() + elapsedTimeMs);
                     const currentMinute = currentTime.getUTCMinutes();
 
                     if (selectedAircraftInstance && selectedAircraftInstance.index === instance.index) {
+                        if (isSignalLost) break; // Don't log history if signal is lost
                         if (instance.lastLoggedMinute !== currentMinute) {
                             instance.lastLoggedMinute = currentMinute;
 
@@ -198,6 +228,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // --- Info Card Update ---
                     if (selectedAircraftInstance && selectedAircraftInstance.index === instance.index) {
+                        if (isSignalLost) {
+                            document.getElementById('info-lat').textContent = '---';
+                            document.getElementById('info-lon').textContent = '---';
+                            document.getElementById('info-alt').textContent = '---';
+                            document.getElementById('info-vel').textContent = '---';
+                            document.getElementById('info-track').textContent = '---';
+                            document.getElementById('info-vert-rate').textContent = '---';
+                            document.getElementById('info-last-update').textContent = 'Signal Lost';
+                        } else {
                         document.getElementById('info-lat').textContent = lat.toFixed(2);
                         document.getElementById('info-lon').textContent = lng.toFixed(2);
                         document.getElementById('info-track').textContent = `${Math.round(bearing)}°`;
@@ -219,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const utcMinutes = currentTime.getUTCMinutes();
                         const utcFormatted = `${String(utcHours).padStart(2, '0')}:${String(utcMinutes).padStart(2, '0')} UTC`;
                         document.getElementById('info-last-update').textContent = utcFormatted;
+                        }
                     }
                     break;
                 }
@@ -227,8 +267,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Update UTC clock
-        const elapsedTimeMs = progress * simulationDurationMinutes * 60 * 1000;
-        const currentTime = new Date(simulationStartTime.getTime() + elapsedTimeMs);
         const hours = currentTime.getUTCHours();
         const minutes = currentTime.getUTCMinutes();
         timestampValueEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} UTC`;
@@ -257,9 +295,12 @@ document.addEventListener('DOMContentLoaded', function () {
             playPauseBtn.textContent = '▶ Play';
         } else {
             animationStartTime = Date.now() - pausedTime;
-            if (pausedTime === 0 && selectedAircraftInstance) {
-                historyTableBody.innerHTML = '';
-                selectedAircraftInstance.lastLoggedMinute = null;
+            if (pausedTime === 0) { // Reset for all aircraft if starting from beginning
+                aircraftInstances.forEach(inst => {
+                    inst.lastLoggedMinute = null;
+                    inst.signalLossAlertShown = false;
+                });
+                if (selectedAircraftInstance) historyTableBody.innerHTML = '';
             }
             animate();
             playPauseBtn.textContent = '⏸ Pause';
